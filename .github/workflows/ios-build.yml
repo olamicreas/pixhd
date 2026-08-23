@@ -1,0 +1,79 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: "Use Latest Xcode"
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.3'
+
+      - name: "Install Project Dependencies"
+        run: |
+          npm install
+          npx expo install react-native-webview
+          npm install -g eas-cli
+
+      - name: "Configure Sandbox Environment & Bypasses"
+        run: |
+          # 1. Prevent SPM Rate Limiting & SSH Hangs
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://".insteadOf "git://"
+          
+          # 2. Inject Sandbox Variables into eas.json
+          node -e "
+          const fs = require('fs');
+          const eas = JSON.parse(fs.readFileSync('eas.json', 'utf8'));
+          eas.build = eas.build || {};
+          eas.build.production = eas.build.production || {};
+          eas.build.production.env = eas.build.production.env || {};
+          
+          // User traps bypasses
+          eas.build.production.env.EXPO_USE_SPM = '0';
+          eas.build.production.env.ENABLE_USER_SCRIPT_SANDBOXING = 'NO';
+          
+          // Give Xcode the exact absolute path to Node.js
+          eas.build.production.env.NODE_BINARY = process.execPath;
+          eas.build.production.env.EXPO_DEBUG = '1';
+          
+          fs.writeFileSync('eas.json', JSON.stringify(eas, null, 2));
+          console.log('Successfully injected build-from-source flags into eas.json');
+          "
+
+      - name: "Build iOS Locally on Free Cloud Mac"
+        run: EAS_NO_VCS=1 eas build --platform ios --local --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: "Upload Expo Build Log"
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-build-log
+          path: /tmp/expo_build.log
+
+      - name: "Submit to App Store Connect"
+        run: npx eas submit --platform ios --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: "Save the .ipa File"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PixHD-iOS
+          path: '*.ipa'

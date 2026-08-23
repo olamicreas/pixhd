@@ -1,42 +1,71 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "PixHD",
+    "slug": "pixhd",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "app",
-    "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    "userInterfaceStyle": "dark",
+    "scheme": "pixhd",
     "plugins": [
-      "expo-router",
       [
-        "expo-splash-screen",
+        "expo-image-picker",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "photosPermission": "PixHD needs access to your photos to enhance and restore them."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "PixHD needs permission to save enhanced photos to your gallery.",
+          "savePhotosPermission": "PixHD needs permission to save enhanced photos to your gallery."
+        }
+      ],
+      "expo-router",
+      "./plugins/withDisableSandboxing.js",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraXCBuildSettings": {
+              "ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+            }
+          }
         }
       ]
     ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pixhd.photoenhancer",
+      "infoPlist": {
+        "com.startapp.sdk.APPLICATION_ID": "207958252",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.pixhd.photoenhancer",
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
+    },
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "29575ebd-324b-4f8b-b979-8da5e8856b35"
+      }
     }
   }
 }
