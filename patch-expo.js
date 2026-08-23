@@ -14,6 +14,17 @@ if (fs.existsSync(dateFile)) {
   }
 }
 
+// Fix Swift 8 C++ interop error in RuntimeScheduler.h
+const schedulerFile = 'node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h';
+if (fs.existsSync(schedulerFile)) {
+  let content = fs.readFileSync(schedulerFile, 'utf8');
+  if (content.includes('SWIFT_RETURNS_RETAINED')) {
+    content = content.replace(/SWIFT_RETURNS_RETAINED /g, '');
+    fs.writeFileSync(schedulerFile, content);
+    console.log('Patched RuntimeScheduler.h successfully.');
+  }
+}
+
 const file = 'node_modules/expo-modules-jsi/apple/scripts/build-xcframework.sh';
 if (fs.existsSync(file)) {
   let content = fs.readFileSync(file, 'utf8');
