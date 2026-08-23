@@ -17,6 +17,8 @@
     "production": {}
   },
   "submit": {
-    "production": {}
+    "production": {
+      "appleId": "6804444552"
+    }
   }
 }
