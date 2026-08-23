@@ -24,7 +24,7 @@ export default function EditorScreen() {
   const currentMode = typeof mode === 'string' ? mode : 'ultra4k';
   const [enhancedUri, setEnhancedUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [fidelity, setFidelity] = useState(75);
+  const [fidelity, setFidelity] = useState(40);
 
   const topPadding = Math.max(insets.top + 10, 20);
   const bottomPadding = Math.max(insets.bottom + 12, 20);

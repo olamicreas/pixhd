@@ -61,7 +61,7 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
   });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('REQUEST_TIMEOUT: 60s limit exceeded')), 60000);
+    setTimeout(() => reject(new Error('REQUEST_TIMEOUT: 5m limit exceeded')), 300000);
   });
 
   const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as FileSystem.FileSystemUploadResult;
