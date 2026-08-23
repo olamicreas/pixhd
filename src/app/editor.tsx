@@ -24,14 +24,15 @@ export default function EditorScreen() {
   const currentMode = typeof mode === 'string' ? mode : 'ultra4k';
   const [enhancedUri, setEnhancedUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [fidelity, setFidelity] = useState(40);
+  const [fidelity, setFidelity] = useState(65); // 65% preserves face identity while enhancing
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const topPadding = Math.max(insets.top + 10, 20);
+  // Fix header padding
+  const topPadding = Math.max(insets.top + 15, 30);
   const bottomPadding = Math.max(insets.bottom + 12, 20);
 
   const dividerPosition = useSharedValue(IMAGE_WIDTH / 2);
 
-  // Full container pan tracking
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
       'worklet';
@@ -47,7 +48,6 @@ export default function EditorScreen() {
     overflow: 'hidden'
   }));
 
-  // Auto-run enhancement when navigating from HomeScreen
   useEffect(() => {
     if (activeImage && !enhancedUri) {
       executeEnhancement(fidelity / 100);
@@ -87,8 +87,10 @@ export default function EditorScreen() {
         targetUri = tempFilePath;
       }
       
-      await MediaLibrary.createAssetAsync(targetUri);
-      Alert.alert('PixHD', 'Saved high-res photo to gallery!');
+      // Use saveToLibraryAsync for better compatibility
+      await MediaLibrary.saveToLibraryAsync(targetUri);
+      Alert.alert('PixHD', 'Saved 4K photo to your gallery!');
+      setIsFullscreen(false);
     } catch (error) {
       console.error(error);
       Alert.alert('PixHD', 'Failed to save image.');
@@ -100,54 +102,66 @@ export default function EditorScreen() {
       <View className="flex-1 bg-dark p-5 pt-2 gap-4 justify-between">
         
         {/* Header */}
-        <View className="flex-row items-center justify-between z-50">
-          <Pressable onPress={() => router.back()} className="w-8 h-8 rounded-full bg-card border border-white/10 items-center justify-center">
-            <X color="#CBD5E1" size={16} />
+        <View className="flex-row items-center justify-between z-50 mb-2">
+          <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-full bg-card border border-white/10 items-center justify-center">
+            <X color="#CBD5E1" size={20} />
           </Pressable>
-          <Text className="text-xs font-medium text-slate-300">Preview</Text>
-          <Pressable onPress={() => executeEnhancement(fidelity / 100)} className="px-3 py-1.5 rounded-full bg-indigo-600 active:bg-indigo-500">
-            <Text className="text-white text-xs font-semibold">Process 4K</Text>
+          <Text className="text-sm font-medium text-slate-300">Preview</Text>
+          <Pressable onPress={() => executeEnhancement(fidelity / 100)} className="px-4 py-2 rounded-full bg-indigo-600 active:bg-indigo-500">
+            <Text className="text-white text-xs font-semibold">Process</Text>
           </Pressable>
         </View>
 
         {/* Before / After Slider Canvas */}
-        <GestureDetector gesture={panGesture}>
-          <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#000' }}>
-            
-            {/* Enhanced Layer (Underneath) */}
-            <Image source={{ uri: enhancedUri || activeImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            {!!enhancedUri && (
-              <View className="absolute top-3 right-3 bg-black/60 px-2 py-0.5 rounded">
-                <Text className="text-[10px] font-medium text-indigo-300">After</Text>
-              </View>
-            )}
-
-            {/* Original Raw Image (Clipped Left Layer) */}
-            <Animated.View style={[StyleSheet.absoluteFill, !!enhancedUri ? animatedBeforeStyle : { width: IMAGE_WIDTH }]}>
-              <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
-                <Image source={{ uri: activeImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                <View className="absolute top-3 left-3 bg-black/60 px-2 py-0.5 rounded">
-                  <Text className="text-[10px] font-medium text-slate-300">Before</Text>
+        <View className="relative">
+          <GestureDetector gesture={panGesture}>
+            <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#000' }}>
+              
+              {/* Enhanced Layer */}
+              <Image source={{ uri: enhancedUri || activeImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              {!!enhancedUri && (
+                <View className="absolute top-3 right-3 bg-black/60 px-2 py-0.5 rounded">
+                  <Text className="text-[10px] font-medium text-indigo-300">After</Text>
                 </View>
-              </View>
-            </Animated.View>
+              )}
 
-            {/* Divider Line & Handle */}
-            {!!enhancedUri && (
-              <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, width: 28, alignItems: 'center', justifyContent: 'center', zIndex: 10, pointerEvents: 'none' }, animatedHandleStyle]}>
-                <View style={{ width: 2, height: '100%', backgroundColor: 'white' }} />
-                <View style={{ position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', elevation: 5 }}>
-                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1e293b' }}>↔</Text>
+              {/* Original Layer */}
+              <Animated.View style={[StyleSheet.absoluteFill, !!enhancedUri ? animatedBeforeStyle : { width: IMAGE_WIDTH }]}>
+                <View style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
+                  <Image source={{ uri: activeImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  <View className="absolute top-3 left-3 bg-black/60 px-2 py-0.5 rounded">
+                    <Text className="text-[10px] font-medium text-slate-300">Before</Text>
+                  </View>
                 </View>
               </Animated.View>
-            )}
-          </View>
-        </GestureDetector>
+
+              {/* Slider Handle */}
+              {!!enhancedUri && (
+                <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, width: 28, alignItems: 'center', justifyContent: 'center', zIndex: 10, pointerEvents: 'none' }, animatedHandleStyle]}>
+                  <View style={{ width: 2, height: '100%', backgroundColor: 'white' }} />
+                  <View style={{ position: 'absolute', width: 28, height: 28, borderRadius: 14, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', elevation: 5 }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1e293b' }}>↔</Text>
+                  </View>
+                </Animated.View>
+              )}
+            </View>
+          </GestureDetector>
+
+          {/* Fullscreen Button */}
+          {!!enhancedUri && (
+            <Pressable 
+              onPress={() => setIsFullscreen(true)}
+              className="absolute bottom-3 right-3 bg-black/70 p-2.5 rounded-full border border-white/20"
+            >
+              <Maximize color="white" size={18} />
+            </Pressable>
+          )}
+        </View>
 
         {/* Controls */}
-        <View className="bg-card p-4 rounded-xl border border-white/10 gap-2">
+        <View className="bg-card p-4 rounded-xl border border-white/10 gap-2 mt-2">
           <View className="flex-row justify-between items-center">
-            <Text className="text-xs font-medium text-slate-300">Clarity Strength</Text>
+            <Text className="text-xs font-medium text-slate-300">Identity Preservation</Text>
             <Text className="text-xs text-slate-400">{Math.round(fidelity)}%</Text>
           </View>
           <Slider 
@@ -164,11 +178,37 @@ export default function EditorScreen() {
         </View>
 
         {/* Save CTA */}
-        <Pressable className="w-full py-3.5 rounded-xl flex-row items-center justify-center gap-1.5 bg-white active:bg-slate-200" onPress={handleSaveImage}>
-          <Download color="#08090C" size={16} />
-          <Text className="font-semibold text-xs text-[#08090C]">Save Image</Text>
+        <Pressable className="w-full py-4 rounded-xl flex-row items-center justify-center gap-2 bg-white active:bg-slate-200 mt-auto" onPress={handleSaveImage}>
+          <Download color="#08090C" size={18} />
+          <Text className="font-semibold text-sm text-[#08090C]">Save 4K Image</Text>
         </Pressable>
       </View>
+
+      {/* Fullscreen Viewer Modal */}
+      <Modal visible={isFullscreen} transparent={true} animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
+          <Image 
+            source={{ uri: enhancedUri || activeImage }} 
+            style={{ width: '100%', height: '100%' }} 
+            resizeMode="contain" 
+          />
+          
+          <Pressable 
+            style={{ position: 'absolute', top: topPadding, right: 20, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 20 }}
+            onPress={() => setIsFullscreen(false)}
+          >
+            <X color="white" size={24} />
+          </Pressable>
+
+          <Pressable 
+            className="absolute bottom-12 self-center flex-row items-center justify-center gap-2 bg-indigo-600 px-8 py-4 rounded-full active:bg-indigo-500"
+            onPress={handleSaveImage}
+          >
+            <Download color="white" size={20} />
+            <Text className="text-white font-bold text-base">Save Fullscreen</Text>
+          </Pressable>
+        </View>
+      </Modal>
 
       {/* Processing Modal */}
       {isProcessing && (
