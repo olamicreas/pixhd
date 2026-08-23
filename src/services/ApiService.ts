@@ -20,7 +20,7 @@ export const getBaseUrl = (): string => {
   return 'http://YOUR_PRODUCTION_VPS_IP:8000';
 };
 
-export const API_BASE_URL = "http://185.113.249.25:8085";
+export const API_BASE_URL = "https://olamicreas--pixhd-backend-fastapi-app.modal.run";
 console.log(`[PixHD Network] Connecting to AI Backend at: ${API_BASE_URL}`);
 
 // Health check to verify live backend link

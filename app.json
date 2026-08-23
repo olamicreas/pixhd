@@ -40,7 +40,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pixhd.photoenhancer",
-      "buildNumber": "101",
+      "buildNumber": "102",
       "infoPlist": {
         "com.startapp.sdk.APPLICATION_ID": "207958252",
         "NSAppTransportSecurity": {
