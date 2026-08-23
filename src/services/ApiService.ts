@@ -45,7 +45,7 @@ export async function checkBackendHealth(): Promise<boolean> {
 export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k', fidelity: number = 0.75): Promise<string> {
   const isHealthy = await checkBackendHealth();
   if (!isHealthy) {
-    throw new Error('BACKEND_UNREACHABLE');
+    throw new Error('You are not connected to the internet, or the server is temporarily offline. Please check your network and try again.');
   }
 
   const targetUrl = `${API_BASE_URL}/api/enhance-ultra`;
@@ -61,17 +61,17 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
   });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('REQUEST_TIMEOUT: 5m limit exceeded')), 300000);
+    setTimeout(() => reject(new Error('The enhancement took too long. Please check your internet connection and try again.')), 300000);
   });
 
   const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as FileSystem.FileSystemUploadResult;
 
   if (uploadResult.status !== 200) {
-    throw new Error(`AI Engine failed with status ${uploadResult.status}`);
+    throw new Error(`The AI engine is currently busy or experiencing issues. Please try again later.`);
   }
   
   if (!uploadResult.body) {
-    throw new Error(`AI Engine returned empty response body`);
+    throw new Error(`The AI engine returned an empty response. Please try again.`);
   }
 
   // Save the returned 4K binary JPEG to cache
