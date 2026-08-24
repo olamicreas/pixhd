@@ -11,7 +11,7 @@ image = (
     .apt_install("git", "libgl1-mesa-glx", "libglib2.0-0", "wget")
     .run_commands("git clone https://github.com/sczhou/CodeFormer.git /CodeFormer")
     .workdir("/CodeFormer")
-    .pip_install("fastapi[standard]", "python-multipart", "uvicorn", "torch==2.3.1", "torchvision==0.18.1", "pillow-heif", "Pillow")
+    .pip_install("fastapi[standard]", "python-multipart", "uvicorn", "torch==2.3.1", "torchvision==0.18.1", "pillow-heif", "Pillow", "opencv-python==4.9.0.80", "opencv-python-headless==4.9.0.80", "numpy<2")
     .run_commands("pip install -r requirements.txt")
     .run_commands("python basicsr/setup.py develop")
     # Download FaceLib and CodeFormer models
