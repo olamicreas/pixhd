@@ -1,36 +1,22 @@
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
-import Constants from 'expo-constants';
+import EventSource from "react-native-sse";
 
-// 1. Auto-detect host IP from Expo debugger connection (Works for physical phones + emulators)
-const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost;
-const hostIp = debuggerHost ? debuggerHost.split(':')[0] : null;
+// Polyfill EventSource for @gradio/client
+// @ts-ignore
+global.EventSource = EventSource;
 
-// 2. Determine target base URL based on platform & environment
-export const getBaseUrl = (): string => {
-  if (__DEV__) {
-    if (hostIp) {
-      return `http://${hostIp}:8000`; // Auto-connects physical phones & emulators via LAN IP
-    }
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8000'; // Android emulator localhost alias
-    }
-    return 'http://localhost:8000'; // iOS simulator
-  }
-  return 'http://YOUR_PRODUCTION_VPS_IP:8000';
-};
+import { Client } from '@gradio/client';
 
-export const API_BASE_URL = "https://olamicreas--pixhd-backend-fastapi-app.modal.run";
-console.log(`[PixHD Network] Connecting to AI Backend at: ${API_BASE_URL}`);
+export const API_BASE_URL = "Olamicreas/pixhd-backend";
+console.log(`[PixHD Network] Connecting to AI Backend at Hugging Face: ${API_BASE_URL}`);
 
 // Health check to verify live backend link
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    // Increase timeout to 15 seconds. Modal Serverless containers take ~5-10 seconds to "wake up" from a cold start.
     const timeoutId = setTimeout(() => controller.abort(), 15000);
-    
-    const res = await fetch(`${API_BASE_URL}/api/health`, {
+    const res = await fetch(`https://huggingface.co/spaces/${API_BASE_URL}`, {
       method: 'GET',
       signal: controller.signal,
     });
@@ -49,38 +35,38 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
     throw new Error('You are not connected to the internet, or the server is temporarily offline. Please check your network and try again.');
   }
 
-  const targetUrl = `${API_BASE_URL}/api/enhance-ultra`;
+  // Convert the local React Native file URI to a Blob so Gradio client can upload it
+  const response = await fetch(imageUri);
+  const blob = await response.blob();
+
+  // Connect to the Hugging Face Gradio Space
+  const app = await Client.connect(API_BASE_URL);
   
-  const uploadPromise = FileSystem.uploadAsync(targetUrl, imageUri, {
-    httpMethod: 'POST',
-    uploadType: 1, // 1 = MULTIPART
-    fieldName: 'file',
-    parameters: {
-      mode: mode,
-      fidelity: fidelity.toString(),
-    },
-  });
+  // Submit the prediction
+  // Parameters match our app.py: inputs=[gr.Image(), gr.Textbox(), gr.Number()]
+  const result = await app.predict("/predict", [
+    blob, 
+    mode, 
+    fidelity
+  ]);
 
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('The enhancement took too long. Please check your internet connection and try again.')), 300000);
-  });
-
-  const uploadResult = await Promise.race([uploadPromise, timeoutPromise]) as FileSystem.FileSystemUploadResult;
-
-  if (uploadResult.status !== 200) {
-    throw new Error(`The AI engine is currently busy or experiencing issues. Please try again later.`);
-  }
-  
-  if (!uploadResult.body) {
+  if (!result || !result.data || result.data.length === 0) {
     throw new Error(`The AI engine returned an empty response. Please try again.`);
   }
 
-  // Save the returned 4K binary JPEG to the persistent Document directory.
-  // iOS 17 strict sandboxing often blocks MediaLibrary from reading directly from the temporary Cache directory!
-  const localOutputUri = `${FileSystem.documentDirectory}pixhd_enhanced_${Date.now()}.jpg`;
-  await FileSystem.writeAsStringAsync(localOutputUri, uploadResult.body, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  // Gradio outputs a file path object: { url: "https://...", path: "..." }
+  const remoteFile = result.data[0] as { url: string };
+  if (!remoteFile || !remoteFile.url) {
+    throw new Error(`Could not parse the enhanced image URL from the AI engine.`);
+  }
 
-  return localOutputUri;
+  // Download the processed image back to the device
+  const localOutputUri = `${FileSystem.documentDirectory}pixhd_enhanced_${Date.now()}.jpg`;
+  const downloadResult = await FileSystem.downloadAsync(remoteFile.url, localOutputUri);
+  
+  if (downloadResult.status !== 200) {
+    throw new Error(`Failed to download the enhanced image. Please try again.`);
+  }
+
+  return downloadResult.uri;
 }
