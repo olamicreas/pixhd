@@ -27,7 +27,8 @@ console.log(`[PixHD Network] Connecting to AI Backend at: ${API_BASE_URL}`);
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    // Increase timeout to 15 seconds. Modal Serverless containers take ~5-10 seconds to "wake up" from a cold start.
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     const res = await fetch(`${API_BASE_URL}/api/health`, {
       method: 'GET',
