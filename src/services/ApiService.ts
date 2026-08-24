@@ -75,8 +75,9 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
     throw new Error(`The AI engine returned an empty response. Please try again.`);
   }
 
-  // Save the returned 4K binary JPEG to cache
-  const localOutputUri = `${FileSystem.cacheDirectory}pixhd_enhanced_${Date.now()}.jpg`;
+  // Save the returned 4K binary JPEG to the persistent Document directory.
+  // iOS 17 strict sandboxing often blocks MediaLibrary from reading directly from the temporary Cache directory!
+  const localOutputUri = `${FileSystem.documentDirectory}pixhd_enhanced_${Date.now()}.jpg`;
   await FileSystem.writeAsStringAsync(localOutputUri, uploadResult.body, {
     encoding: FileSystem.EncodingType.Base64,
   });

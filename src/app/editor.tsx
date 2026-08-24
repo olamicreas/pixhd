@@ -80,7 +80,7 @@ export default function EditorScreen() {
       let targetUri = enhancedUri || activeImage;
       if (targetUri.startsWith('data:image')) {
         const base64Data = targetUri.split(',')[1];
-        const tempFilePath = FileSystem.cacheDirectory + `pixhd_${Date.now()}.jpg`;
+        const tempFilePath = FileSystem.documentDirectory + `pixhd_${Date.now()}.jpg`;
         await FileSystem.writeAsStringAsync(tempFilePath, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
@@ -91,9 +91,9 @@ export default function EditorScreen() {
       await MediaLibrary.saveToLibraryAsync(targetUri);
       Alert.alert('PixHD', 'Saved 4K photo to your gallery!');
       setIsFullscreen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Alert.alert('PixHD', 'Failed to save image.');
+      Alert.alert('PixHD Error', `Failed to save image: ${error.message || JSON.stringify(error)}`);
     }
   };
 
