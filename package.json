@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.12",
-    "@gradio/client": "^2.5.0",
     "@react-native-community/slider": "5.2.0",
     "expo": "~57.0.15",
     "expo-build-properties": "^57.0.13",
@@ -35,7 +34,6 @@
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-sse": "^1.2.1",
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.10.1",

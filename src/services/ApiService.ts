@@ -1,31 +1,67 @@
-import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
-import EventSource from "react-native-sse";
 
-// Polyfill EventSource for @gradio/client
-// @ts-ignore
-global.EventSource = EventSource;
-
-import { Client } from '@gradio/client';
-
-export const API_BASE_URL = "Olamicreas/pixhd-backend";
-console.log(`[PixHD Network] Connecting to AI Backend at Hugging Face: ${API_BASE_URL}`);
+const SPACE_NAME = "Olamicreas/pixhd-backend";
+const GRADIO_URL = `https://${SPACE_NAME.replace("/", "-").toLowerCase()}.hf.space`;
+console.log(`[PixHD Network] Connecting to AI Backend at: ${GRADIO_URL}`);
 
 // Health check to verify live backend link
 export async function checkBackendHealth(): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(`https://huggingface.co/spaces/${API_BASE_URL}`, {
-      method: 'GET',
+    const res = await fetch(`${GRADIO_URL}/api/predict`, {
+      method: 'OPTIONS',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    return res.ok;
+    // Any response (even 405) means the server is alive
+    return true;
   } catch (err) {
-    console.warn(`[PixHD Network] Health check failed for ${API_BASE_URL}:`, err);
-    return false;
+    // Try a simple GET as fallback
+    try {
+      const res2 = await fetch(GRADIO_URL, { method: 'GET' });
+      return res2.ok;
+    } catch {
+      console.warn(`[PixHD Network] Health check failed:`, err);
+      return false;
+    }
   }
+}
+
+// Upload a file to Gradio's upload endpoint and get back a server-side path
+async function uploadToGradio(imageUri: string): Promise<string> {
+  // Read image as base64
+  const base64 = await FileSystem.readAsStringAsync(imageUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  // Convert to blob via fetch
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], { type: 'image/jpeg' });
+
+  // Upload to Gradio's file upload endpoint
+  const formData = new FormData();
+  formData.append('files', blob, `input_${Date.now()}.jpg`);
+
+  const uploadRes = await fetch(`${GRADIO_URL}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(`Failed to upload image to AI server (${uploadRes.status})`);
+  }
+
+  const uploadedFiles: string[] = await uploadRes.json();
+  if (!uploadedFiles || uploadedFiles.length === 0) {
+    throw new Error('AI server did not return an uploaded file path.');
+  }
+
+  return uploadedFiles[0];
 }
 
 // 4K Ultra Processing Upload Handler
@@ -35,38 +71,66 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
     throw new Error('You are not connected to the internet, or the server is temporarily offline. Please check your network and try again.');
   }
 
-  // Convert the local React Native file URI to a Blob so Gradio client can upload it
-  const response = await fetch(imageUri);
-  const blob = await response.blob();
+  console.log(`[PixHD] Uploading image for mode=${mode}, fidelity=${fidelity}...`);
 
-  // Connect to the Hugging Face Gradio Space
-  const app = await Client.connect(API_BASE_URL);
-  
-  // Submit the prediction
-  // Parameters match our app.py: inputs=[gr.Image(), gr.Textbox(), gr.Number()]
-  const result = await app.predict("/predict", [
-    blob, 
-    mode, 
-    fidelity
-  ]);
+  // Step 1: Upload the image file to Gradio
+  const serverPath = await uploadToGradio(imageUri);
+  console.log(`[PixHD] Image uploaded: ${serverPath}`);
 
+  // Step 2: Call the /api/predict endpoint
+  // Our Gradio Interface has: inputs=[gr.Image(type="filepath"), gr.Textbox(), gr.Number()]
+  const predictRes = await fetch(`${GRADIO_URL}/api/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      data: [
+        { path: serverPath, meta: { _type: "gradio.FileData" } },
+        mode,
+        fidelity,
+      ],
+    }),
+  });
+
+  if (!predictRes.ok) {
+    const errText = await predictRes.text();
+    throw new Error(`AI processing failed (${predictRes.status}): ${errText}`);
+  }
+
+  const result = await predictRes.json();
+  console.log(`[PixHD] Prediction result:`, JSON.stringify(result).substring(0, 200));
+
+  // Step 3: Extract the output image URL
+  // Gradio returns: { data: [{ url: "https://...", path: "..." }] }  or  { data: ["/file=..."] }
   if (!result || !result.data || result.data.length === 0) {
-    throw new Error(`The AI engine returned an empty response. Please try again.`);
+    throw new Error('The AI engine returned an empty response. Please try again.');
   }
 
-  // Gradio outputs a file path object: { url: "https://...", path: "..." }
-  const remoteFile = result.data[0] as { url: string };
-  if (!remoteFile || !remoteFile.url) {
-    throw new Error(`Could not parse the enhanced image URL from the AI engine.`);
+  let imageUrl: string;
+  const output = result.data[0];
+
+  if (typeof output === 'string') {
+    // Direct URL or path
+    imageUrl = output.startsWith('http') ? output : `${GRADIO_URL}/${output.replace(/^\//, '')}`;
+  } else if (output && output.url) {
+    // FileData object with url
+    imageUrl = output.url;
+  } else if (output && output.path) {
+    // FileData object with only path
+    imageUrl = `${GRADIO_URL}/file=${output.path}`;
+  } else {
+    throw new Error('Could not parse the enhanced image URL from the AI engine.');
   }
 
-  // Download the processed image back to the device
+  console.log(`[PixHD] Downloading enhanced image from: ${imageUrl}`);
+
+  // Step 4: Download the processed image back to the device
   const localOutputUri = `${FileSystem.documentDirectory}pixhd_enhanced_${Date.now()}.jpg`;
-  const downloadResult = await FileSystem.downloadAsync(remoteFile.url, localOutputUri);
-  
+  const downloadResult = await FileSystem.downloadAsync(imageUrl, localOutputUri);
+
   if (downloadResult.status !== 200) {
-    throw new Error(`Failed to download the enhanced image. Please try again.`);
+    throw new Error(`Failed to download the enhanced image (HTTP ${downloadResult.status}).`);
   }
 
+  console.log(`[PixHD] Enhanced image saved to: ${downloadResult.uri}`);
   return downloadResult.uri;
 }
