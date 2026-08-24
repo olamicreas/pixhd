@@ -86,9 +86,20 @@ export default function EditorScreen() {
         });
         targetUri = tempFilePath;
       }
+
+      // Ensure file:// prefix for MediaLibrary
+      if (!targetUri.startsWith('file://') && !targetUri.startsWith('http')) {
+        targetUri = `file://${targetUri}`;
+      }
       
-      // Use saveToLibraryAsync for better compatibility
-      await MediaLibrary.saveToLibraryAsync(targetUri);
+      try {
+        await MediaLibrary.saveToLibraryAsync(targetUri);
+      } catch (saveErr) {
+        // Fallback for some Android/iOS versions
+        const asset = await MediaLibrary.createAssetAsync(targetUri);
+        await MediaLibrary.createAlbumAsync('PixHD', asset, false);
+      }
+
       Alert.alert('PixHD', 'Saved 4K photo to your gallery!');
       setIsFullscreen(false);
     } catch (error: any) {
