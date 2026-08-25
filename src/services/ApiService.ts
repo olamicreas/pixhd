@@ -106,7 +106,7 @@ export async function enhanceUltra4K(
           if (!payload.success) {
             backendError = payload.output && payload.output.error 
               ? payload.output.error 
-              : 'AI processing returned failure status.';
+              : 'You have reached your free daily AI quota. Please try again in 24 hours.';
           } else {
             result = payload.output;
           }
@@ -118,6 +118,9 @@ export async function enhanceUltra4K(
   }
 
   if (backendError) {
+    if (typeof backendError === 'string' && backendError.toLowerCase().includes('quota')) {
+      throw new Error('You have reached your free daily AI quota. Please try again in 24 hours.');
+    }
     throw new Error(`AI Server Error: ${backendError}`);
   }
 
