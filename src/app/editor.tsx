@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Pressable, Image, StyleSheet, Modal, ActivityIndicator, Alert, Dimensions, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,8 +25,8 @@ export default function EditorScreen() {
   const currentMode = typeof mode === 'string' ? mode : 'ultra4k';
   const [enhancedUri, setEnhancedUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [fidelity, setFidelity] = useState(65); // 65% preserves face identity while enhancing
-  const [autoColor, setAutoColor] = useState(false);
+  const [fidelity, setFidelity] = useState(70);
+  const [autoColor, setAutoColor] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Fix header padding
@@ -50,13 +51,33 @@ export default function EditorScreen() {
   }));
 
   useEffect(() => {
-    if (activeImage && !enhancedUri) {
-      executeEnhancement(fidelity / 100, autoColor);
-    }
+    const initSettings = async () => {
+      if (activeImage && !enhancedUri) {
+        let savedFidelity = 70;
+        let savedAutoColor = true;
+        try {
+          const f = await AsyncStorage.getItem('pixhd_fidelity');
+          if (f) savedFidelity = parseInt(f, 10);
+          
+          const a = await AsyncStorage.getItem('pixhd_autoColor');
+          if (a !== null) savedAutoColor = a === 'true';
+        } catch (e) {}
+
+        setFidelity(savedFidelity);
+        setAutoColor(savedAutoColor);
+
+        executeEnhancement(savedFidelity / 100, savedAutoColor);
+      }
+    };
+    initSettings();
   }, []);
 
   const executeEnhancement = async (fidelityVal: number, useAutoColor: boolean = autoColor) => {
     if (!activeImage || isProcessing) return;
+    try {
+      await AsyncStorage.setItem('pixhd_fidelity', Math.round(fidelityVal * 100).toString());
+      await AsyncStorage.setItem('pixhd_autoColor', useAutoColor.toString());
+    } catch(e) {}
     await AdManager.showAd('PROCESS_4K');
     try {
       setIsProcessing(true);
