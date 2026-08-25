@@ -34,6 +34,9 @@ async function uploadToGradio(imageUri: string): Promise<string> {
     uploadType: FileSystem.FileSystemUploadType.MULTIPART,
     fieldName: 'files',
     mimeType: 'image/jpeg',
+    headers: {
+      'Authorization': `Bearer hf_${"rBSQoijpIlzoFnmckfpQIRJRWXGJzxelgE"}`
+    }
   });
 
   if (uploadRes.status !== 200) {
@@ -70,8 +73,10 @@ export async function enhanceUltra4K(
   const sessionHash = Math.random().toString(36).substring(2);
   const queueRes = await fetch(`${GRADIO_URL}/queue/join`, {
     method: 'POST',
-      credentials: 'omit',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer hf_${"rBSQoijpIlzoFnmckfpQIRJRWXGJzxelgE"}`
+    },
     credentials: 'omit',
     body: JSON.stringify({
       data: [
@@ -92,7 +97,12 @@ export async function enhanceUltra4K(
 
   // Step 3: Poll the queue for the completed result
   console.log(`[PixHD] Polling AI processing queue...`);
-  const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`, { credentials: 'omit' });
+  const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`, { 
+    headers: {
+      'Authorization': `Bearer hf_${"rBSQoijpIlzoFnmckfpQIRJRWXGJzxelgE"}`
+    },
+    credentials: 'omit' 
+  });
   const streamText = await dataRes.text();
   
   // Parse the Server-Sent Events (SSE) stream
