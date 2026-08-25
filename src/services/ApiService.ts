@@ -70,7 +70,9 @@ export async function enhanceUltra4K(
   const sessionHash = Math.random().toString(36).substring(2);
   const queueRes = await fetch(`${GRADIO_URL}/queue/join`, {
     method: 'POST',
+      credentials: 'omit',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'omit',
     body: JSON.stringify({
       data: [
         { path: serverPath, meta: { _type: "gradio.FileData" } },
@@ -90,7 +92,7 @@ export async function enhanceUltra4K(
 
   // Step 3: Poll the queue for the completed result
   console.log(`[PixHD] Polling AI processing queue...`);
-  const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`);
+  const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`, { credentials: 'omit' });
   const streamText = await dataRes.text();
   
   // Parse the Server-Sent Events (SSE) stream
