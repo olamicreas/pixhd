@@ -28,28 +28,22 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
-// Upload a file to Gradio's upload endpoint and get back a server-side path
 async function uploadToGradio(imageUri: string): Promise<string> {
-  // Read image as base64
-  const base64 = await FileSystem.readAsStringAsync(imageUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
-  // Convert to blob via fetch
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  const blob = new Blob([bytes], { type: 'image/jpeg' });
-
-  // Upload to Gradio's file upload endpoint
   const formData = new FormData();
-  formData.append('files', blob, `input_${Date.now()}.jpg`);
+  
+  // React Native's FormData allows appending files using this special object format
+  formData.append('files', {
+    uri: imageUri,
+    name: `input_${Date.now()}.jpg`,
+    type: 'image/jpeg',
+  } as any);
 
   const uploadRes = await fetch(`${GRADIO_URL}/upload`, {
     method: 'POST',
     body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
 
   if (!uploadRes.ok) {
