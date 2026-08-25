@@ -49,13 +49,18 @@ async function uploadToGradio(imageUri: string): Promise<string> {
 }
 
 // 4K Ultra Processing Upload Handler
-export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k', fidelity: number = 0.75): Promise<string> {
+export async function enhanceUltra4K(
+  imageUri: string, 
+  mode: string = 'ultra4k', 
+  fidelity: number = 0.75,
+  autoColor: boolean = false
+): Promise<string> {
   const isHealthy = await checkBackendHealth();
   if (!isHealthy) {
     throw new Error('You are not connected to the internet, or the server is temporarily offline. Please check your network and try again.');
   }
 
-  console.log(`[PixHD] Uploading image for mode=${mode}, fidelity=${fidelity}...`);
+  console.log(`[PixHD] Uploading image for mode=${mode}, fidelity=${fidelity}, autoColor=${autoColor}...`);
 
   // Step 1: Upload the image file to Gradio
   const serverPath = await uploadToGradio(imageUri);
@@ -71,6 +76,7 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
         { path: serverPath, meta: { _type: "gradio.FileData" } },
         mode,
         fidelity,
+        autoColor,
       ],
       fn_index: 0,
       session_hash: sessionHash,

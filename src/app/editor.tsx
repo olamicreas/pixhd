@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Image, StyleSheet, Modal, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet, Modal, ActivityIndicator, Alert, Dimensions, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Download, Maximize } from 'lucide-react-native';
@@ -25,6 +25,7 @@ export default function EditorScreen() {
   const [enhancedUri, setEnhancedUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fidelity, setFidelity] = useState(65); // 65% preserves face identity while enhancing
+  const [autoColor, setAutoColor] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Fix header padding
@@ -50,16 +51,16 @@ export default function EditorScreen() {
 
   useEffect(() => {
     if (activeImage && !enhancedUri) {
-      executeEnhancement(fidelity / 100);
+      executeEnhancement(fidelity / 100, autoColor);
     }
   }, []);
 
-  const executeEnhancement = async (fidelityVal: number) => {
+  const executeEnhancement = async (fidelityVal: number, useAutoColor: boolean = autoColor) => {
     if (!activeImage || isProcessing) return;
     await AdManager.showAd('PROCESS_4K');
     try {
       setIsProcessing(true);
-      const resultUri = await enhanceUltra4K(activeImage, currentMode, fidelityVal);
+      const resultUri = await enhanceUltra4K(activeImage, currentMode, fidelityVal, useAutoColor);
       setEnhancedUri(resultUri);
     } catch (error: any) {
       Alert.alert('PixHD', error.message || 'Enhancement failed. Please retry.');
@@ -186,6 +187,21 @@ export default function EditorScreen() {
             maximumTrackTintColor="#334155"
             thumbTintColor="#4F46E5"
           />
+          <View className="flex-row justify-between items-center mt-2 border-t border-white/5 pt-3">
+            <View>
+              <Text className="text-sm font-medium text-slate-200">Auto Color Improvement</Text>
+              <Text className="text-[10px] text-slate-400">Fixes exposure, saturation, and vibrancy</Text>
+            </View>
+            <Switch 
+              value={autoColor} 
+              onValueChange={(val) => {
+                setAutoColor(val);
+                executeEnhancement(fidelity / 100, val);
+              }}
+              trackColor={{ false: '#334155', true: '#4F46E5' }}
+              thumbColor={'#ffffff'}
+            />
+          </View>
         </View>
 
         {/* Save CTA */}
