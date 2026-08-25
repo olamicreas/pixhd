@@ -29,28 +29,18 @@ export async function checkBackendHealth(): Promise<boolean> {
 }
 
 async function uploadToGradio(imageUri: string): Promise<string> {
-  const formData = new FormData();
-  
-  // React Native's FormData allows appending files using this special object format
-  formData.append('files', {
-    uri: imageUri,
-    name: `input_${Date.now()}.jpg`,
-    type: 'image/jpeg',
-  } as any);
-
-  const uploadRes = await fetch(`${GRADIO_URL}/upload`, {
-    method: 'POST',
-    body: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+  const uploadRes = await FileSystem.uploadAsync(`${GRADIO_URL}/upload`, imageUri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: 'files',
+    mimeType: 'image/jpeg',
   });
 
-  if (!uploadRes.ok) {
+  if (uploadRes.status !== 200) {
     throw new Error(`Failed to upload image to AI server (${uploadRes.status})`);
   }
 
-  const uploadedFiles: string[] = await uploadRes.json();
+  const uploadedFiles: string[] = JSON.parse(uploadRes.body);
   if (!uploadedFiles || uploadedFiles.length === 0) {
     throw new Error('AI server did not return an uploaded file path.');
   }
