@@ -61,9 +61,9 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
   const serverPath = await uploadToGradio(imageUri);
   console.log(`[PixHD] Image uploaded: ${serverPath}`);
 
-  // Step 2: Call the /api/predict endpoint
-  // Our Gradio Interface has: inputs=[gr.Image(type="filepath"), gr.Textbox(), gr.Number()]
-  const predictRes = await fetch(`${GRADIO_URL}/api/predict`, {
+  // Step 2: Join the Gradio Queue
+  const sessionHash = Math.random().toString(36).substring(2);
+  const queueRes = await fetch(`${GRADIO_URL}/queue/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -72,18 +72,47 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
         mode,
         fidelity,
       ],
+      fn_index: 0,
+      session_hash: sessionHash,
     }),
   });
 
-  if (!predictRes.ok) {
-    const errText = await predictRes.text();
-    throw new Error(`AI processing failed (${predictRes.status}): ${errText}`);
+  if (!queueRes.ok) {
+    const errText = await queueRes.text();
+    throw new Error(`Queue join failed (${queueRes.status}): ${errText}`);
   }
 
-  const result = await predictRes.json();
+  // Step 3: Poll the queue for the completed result
+  console.log(`[PixHD] Polling AI processing queue...`);
+  const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`);
+  const streamText = await dataRes.text();
+  
+  // Parse the Server-Sent Events (SSE) stream
+  let result = null;
+  const lines = streamText.split('\n');
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      try {
+        const payload = JSON.parse(line.substring(6));
+        if (payload.msg === 'process_completed') {
+          if (!payload.success) {
+            throw new Error('AI processing returned failure status.');
+          }
+          result = payload.output;
+        }
+      } catch (e) {
+        // Ignore parse errors on partial lines
+      }
+    }
+  }
+
+  if (!result) {
+    throw new Error(`AI processing failed. Stream output: ${streamText.substring(0, 200)}`);
+  }
+
   console.log(`[PixHD] Prediction result:`, JSON.stringify(result).substring(0, 200));
 
-  // Step 3: Extract the output image URL
+  // Step 4: Extract the output image URL
   // Gradio returns: { data: [{ url: "https://...", path: "..." }] }  or  { data: ["/file=..."] }
   if (!result || !result.data || result.data.length === 0) {
     throw new Error('The AI engine returned an empty response. Please try again.');
