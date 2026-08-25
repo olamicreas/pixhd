@@ -89,21 +89,30 @@ export async function enhanceUltra4K(imageUri: string, mode: string = 'ultra4k',
   
   // Parse the Server-Sent Events (SSE) stream
   let result = null;
+  let backendError = null;
   const lines = streamText.split('\n');
+  
   for (const line of lines) {
     if (line.startsWith('data: ')) {
       try {
         const payload = JSON.parse(line.substring(6));
         if (payload.msg === 'process_completed') {
           if (!payload.success) {
-            throw new Error('AI processing returned failure status.');
+            backendError = payload.output && payload.output.error 
+              ? payload.output.error 
+              : 'AI processing returned failure status.';
+          } else {
+            result = payload.output;
           }
-          result = payload.output;
         }
       } catch (e) {
         // Ignore parse errors on partial lines
       }
     }
+  }
+
+  if (backendError) {
+    throw new Error(`AI Server Error: ${backendError}`);
   }
 
   if (!result) {
