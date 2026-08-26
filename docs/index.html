@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixHD - AI Photo Enhancer</title>
+    <meta name="description" content="Enhance, unblur, and restore your photos using cutting-edge AI directly on your iPhone.">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#040507',
+                        card: '#0a0d14',
+                        primary: '#818CF8'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- AOS Animations -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #040507; color: white; overflow-x: hidden; }
+        .gradient-text {
+            background: linear-gradient(to right, #818CF8, #C084FC);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glow { box-shadow: 0 0 40px rgba(129, 140, 248, 0.3); }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 bg-dark/80 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-3">
+                    <img src="assets/icon.png" alt="PixHD Logo" class="w-10 h-10 rounded-xl">
+                    <span class="text-xl font-bold tracking-tight">PixHD</span>
+                </a>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-300">
+                <a href="index.html#features" class="hover:text-white transition-colors">Features</a>
+                <a href="privacy.html" class="hover:text-white transition-colors">Privacy</a>
+                <a href="terms.html" class="hover:text-white transition-colors">Terms</a>
+            </div>
+            <a href="#download" class="bg-primary/10 text-primary border border-primary/20 px-5 py-2 rounded-full font-semibold hover:bg-primary/20 transition-all">
+                Get the App
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-40 pb-20 px-6 relative">
+        <div class="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/20 rounded-full blur-[100px] -z-10"></div>
+        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+            <div class="flex-1 text-center lg:text-left" data-aos="fade-up">
+                <div class="inline-block border border-primary/30 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+                    ✨ Introducing PixHD 1.0
+                </div>
+                <h1 class="text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                    Bring your <br> photos back <br> to <span class="gradient-text">Life.</span>
+                </h1>
+                <p class="text-lg text-gray-400 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                    Unblur faces, restore vintage photos, and upscale your images to breathtaking 4K resolution using next-generation AI directly on your iPhone.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                    <a href="#download" class="bg-white text-dark px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-all glow w-full sm:w-auto text-center">
+                        Download on App Store
+                    </a>
+                </div>
+            </div>
+            <!-- Mockup Graphic -->
+            <div class="flex-1 relative" data-aos="zoom-in" data-aos-delay="200">
+                <div class="w-full max-w-sm mx-auto aspect-[1/2] bg-card border border-white/10 rounded-[3rem] p-2 shadow-2xl relative overflow-hidden">
+                    <img src="assets/icon.png" alt="App Preview" class="w-full h-full object-cover rounded-[2.5rem] opacity-30 blur-md">
+                    <div class="absolute inset-0 flex items-center justify-center flex-col z-10">
+                        <img src="assets/icon.png" alt="PixHD" class="w-28 h-28 rounded-3xl mb-6 shadow-2xl border border-white/10">
+                        <h3 class="text-2xl font-bold text-white mb-2">PixHD</h3>
+                        <div class="w-48 h-2 bg-white/20 rounded-full mt-4 overflow-hidden">
+                            <div class="w-2/3 h-full bg-primary rounded-full animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-24 bg-card border-y border-white/5 relative">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-20" data-aos="fade-up">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Studio-grade tools in your pocket</h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">Powered by state-of-the-art AI models to handle any photo restoration task instantly.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-dark p-8 rounded-3xl border border-white/5 hover:border-primary/30 transition-colors" data-aos="fade-up">
+                    <div class="w-14 h-14 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mb-6 text-2xl">✨</div>
+                    <h3 class="text-2xl font-bold mb-3">Face Unblur</h3>
+                    <p class="text-gray-400 leading-relaxed">Recover crystal-clear facial details from heavily blurred, out-of-focus, or pixelated portraits.</p>
+                </div>
+                <div class="bg-dark p-8 rounded-3xl border border-white/5 hover:border-primary/30 transition-colors" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center mb-6 text-2xl">⚡</div>
+                    <h3 class="text-2xl font-bold mb-3">4K Upscaling</h3>
+                    <p class="text-gray-400 leading-relaxed">Boost the resolution of low-quality images without losing details. Perfect for printing or zooming.</p>
+                </div>
+                <div class="bg-dark p-8 rounded-3xl border border-white/5 hover:border-primary/30 transition-colors" data-aos="fade-up">
+                    <div class="w-14 h-14 bg-pink-500/20 text-pink-400 rounded-2xl flex items-center justify-center mb-6 text-2xl">🎨</div>
+                    <h3 class="text-2xl font-bold mb-3">Colorization</h3>
+                    <p class="text-gray-400 leading-relaxed">Breathe life into old black-and-white family photos with highly accurate AI color restoration.</p>
+                </div>
+                <div class="bg-dark p-8 rounded-3xl border border-white/5 hover:border-primary/30 transition-colors" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-6 text-2xl">🔒</div>
+                    <h3 class="text-2xl font-bold mb-3">Privacy First</h3>
+                    <p class="text-gray-400 leading-relaxed">Your photos are processed on secure ephemeral servers and instantly deleted. We never store your data.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark pt-20 pb-10 border-t border-white/10">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+                <div class="flex items-center gap-3">
+                    <img src="assets/icon.png" alt="PixHD" class="w-8 h-8 rounded-lg">
+                    <span class="text-lg font-bold">PixHD</span>
+                </div>
+                <div class="flex gap-6 text-sm text-gray-400">
+                    <a href="privacy.html" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition-colors">Terms of Service</a>
+                </div>
+            </div>
+            <div class="text-center text-sm text-gray-600">
+                &copy; 2026 PixHD. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    <script>AOS.init({ once: true, offset: 50, duration: 800 });</script>
+</body>
+</html>
