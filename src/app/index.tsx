@@ -1,5 +1,6 @@
 import { View, Text, Pressable, ScrollView, Alert, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Upload, ChevronRight, Wand2, Maximize, Sparkles, Palette } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,7 +27,17 @@ export default function HomeScreen() {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const selectedUri = result.assets[0].uri;
+      let selectedUri = result.assets[0].uri;
+      try {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          selectedUri,
+          [],
+          { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        selectedUri = manipResult.uri;
+      } catch (e) {
+        console.warn('Failed to transcode image, using original', e);
+      }
       router.push({ pathname: '/editor', params: { imageUri: selectedUri, mode } });
     }
   };
