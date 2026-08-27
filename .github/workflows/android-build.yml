@@ -17,25 +17,12 @@ jobs:
           node-version: 22.x
           cache: 'npm'
 
-      - name: "Setup Java"
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
       - name: "Install Project Dependencies"
         run: |
           npm install
           npm install -g eas-cli
 
-      - name: "Build Android APK"
-        run: EAS_NO_VCS=1 eas build --platform android --profile android-apk --local --non-interactive
+      - name: "Build Android APK on Expo Cloud"
+        run: EAS_NO_VCS=1 eas build --platform android --profile android-apk --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: "Save the .apk File"
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: PixHD-Android
-          path: '*.apk'
