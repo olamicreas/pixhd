@@ -32,9 +32,7 @@
             }
           },
           "android": {
-            "usesCleartextTraffic": true,
-            "compileSdkVersion": 37,
-            "kotlinVersion": "2.4.0"
+            "usesCleartextTraffic": true
           }
         }
       ]
