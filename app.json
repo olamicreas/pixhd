@@ -32,7 +32,8 @@
             }
           },
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "compileSdkVersion": 37
           }
         }
       ]
