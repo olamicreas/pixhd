@@ -75,6 +75,29 @@ export default function EditorScreen() {
 
   const executeEnhancement = async (fidelityVal: number, useAutoColor: boolean = autoColor) => {
     if (!activeImage || isProcessing) return;
+
+    // --- CLIENT-SIDE QUOTA CHECK ---
+    try {
+      const today = new Date().toDateString();
+      const quotaRaw = await AsyncStorage.getItem('pixhd_daily_quota');
+      let quota = quotaRaw ? JSON.parse(quotaRaw) : { date: today, count: 0 };
+      
+      if (quota.date !== today) {
+        quota = { date: today, count: 0 };
+      }
+
+      if (quota.count >= 5) {
+        Alert.alert(
+          'Daily Limit Reached ⏱️', 
+          'You have reached your limit of 5 free enhancements for today. Please come back tomorrow!'
+        );
+        return;
+      }
+    } catch (e) {
+      console.warn('Quota check failed', e);
+    }
+    // -------------------------------
+
     try {
       await AsyncStorage.setItem('pixhd_fidelity', Math.round(fidelityVal * 100).toString());
       await AsyncStorage.setItem('pixhd_autoColor', useAutoColor.toString());
@@ -84,6 +107,18 @@ export default function EditorScreen() {
       setIsProcessing(true);
       const resultUri = await enhanceUltra4K(activeImage, currentMode, fidelityVal, useAutoColor);
       setEnhancedUri(resultUri);
+
+      // --- INCREMENT QUOTA ON SUCCESS ---
+      try {
+        const today = new Date().toDateString();
+        const quotaRaw = await AsyncStorage.getItem('pixhd_daily_quota');
+        let quota = quotaRaw ? JSON.parse(quotaRaw) : { date: today, count: 0 };
+        if (quota.date !== today) quota = { date: today, count: 0 };
+        quota.count += 1;
+        await AsyncStorage.setItem('pixhd_daily_quota', JSON.stringify(quota));
+      } catch (e) {}
+      // ----------------------------------
+
     } catch (error: any) {
       Alert.alert('PixHD', error.message || 'Enhancement failed. Please retry.');
     } finally {
