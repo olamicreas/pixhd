@@ -4,6 +4,51 @@ const SPACE_NAME = "Olamicreas/pixhd-backend";
 const GRADIO_URL = `https://${SPACE_NAME.replace("/", "-").toLowerCase()}.hf.space`;
 console.log(`[PixHD Network] Connecting to AI Backend at: ${GRADIO_URL}`);
 
+function extractResetTime(response: Response): string | null {
+  const resetHeader = response.headers.get('X-RateLimit-Reset') 
+    || response.headers.get('x-ratelimit-reset');
+  const retryAfter = response.headers.get('Retry-After') 
+    || response.headers.get('retry-after');
+
+  if (resetHeader) {
+    const resetTimestamp = parseInt(resetHeader, 10);
+    if (!isNaN(resetTimestamp)) {
+      const resetDate = new Date(resetTimestamp > 1e12 ? resetTimestamp : resetTimestamp * 1000);
+      return formatResetTime(resetDate);
+    }
+  }
+
+  if (retryAfter) {
+    const seconds = parseInt(retryAfter, 10);
+    if (!isNaN(seconds)) {
+      const resetDate = new Date(Date.now() + seconds * 1000);
+      return formatResetTime(resetDate);
+    }
+  }
+
+  return null;
+}
+
+function formatResetTime(resetDate: Date): string {
+  const now = new Date();
+  const diffMs = resetDate.getTime() - now.getTime();
+
+  if (diffMs <= 0) return 'in a few moments';
+
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const remainingMins = diffMins % 60;
+
+  const timeStr = resetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (diffHours > 0) {
+    return `in ${diffHours}h ${remainingMins}m (at ${timeStr})`;
+  }
+  return `in ${diffMins} minute${diffMins !== 1 ? 's' : ''} (at ${timeStr})`;
+}
+
+let lastKnownResetTime: string | null = null;
+
 // Health check to verify live backend link
 export async function checkBackendHealth(): Promise<boolean> {
   try {
@@ -91,9 +136,18 @@ export async function enhanceUltra4K(
   });
 
   if (!queueRes.ok) {
+    const resetTime = extractResetTime(queueRes);
+    if (resetTime) lastKnownResetTime = resetTime;
     const errText = await queueRes.text();
+    if (queueRes.status === 429) {
+      const when = resetTime || lastKnownResetTime || 'later';
+      throw new Error(`You have reached your AI quota. Your usage resets ${when}.`);
+    }
     throw new Error(`Queue join failed (${queueRes.status}): ${errText}`);
   }
+
+  const queueResetTime = extractResetTime(queueRes);
+  if (queueResetTime) lastKnownResetTime = queueResetTime;
 
   // Step 3: Poll the queue for the completed result
   console.log(`[PixHD] Polling AI processing queue...`);
@@ -103,6 +157,10 @@ export async function enhanceUltra4K(
     },
     credentials: 'omit' 
   });
+
+  const dataResetTime = extractResetTime(dataRes);
+  if (dataResetTime) lastKnownResetTime = dataResetTime;
+
   const streamText = await dataRes.text();
   
   // Parse the Server-Sent Events (SSE) stream
@@ -118,7 +176,7 @@ export async function enhanceUltra4K(
           if (!payload.success) {
             backendError = payload.output && payload.output.error 
               ? payload.output.error 
-              : 'You have reached your free daily AI quota. Please try again in 24 hours.';
+              : 'quota exceeded';
           } else {
             result = payload.output;
           }
@@ -131,7 +189,8 @@ export async function enhanceUltra4K(
 
   if (backendError) {
     if (typeof backendError === 'string' && backendError.toLowerCase().includes('quota')) {
-      throw new Error('You have reached your free daily AI quota. Please try again in 24 hours.');
+      const when = lastKnownResetTime || 'later (check back in a few hours)';
+      throw new Error(`You have reached your free daily AI quota. Your usage resets ${when}.`);
     }
     throw new Error(`AI Server Error: ${backendError}`);
   }

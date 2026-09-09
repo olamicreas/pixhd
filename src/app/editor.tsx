@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system';
 import Slider from '@react-native-community/slider';
 import { enhanceUltra4K } from '../services/ApiService';
 import { AdManager } from '../services/AdManager';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 const { width } = Dimensions.get('window');
 const IMAGE_WIDTH = width - 40;
@@ -130,6 +131,73 @@ export default function EditorScreen() {
     }
   };
 
+  const handleSaveFullscreen = async () => {
+    await AdManager.showAd('SAVE_IMAGE');
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('PixHD', 'Photo library permission required.');
+        return;
+      }
+      
+      let targetUri = enhancedUri || activeImage;
+      if (targetUri.startsWith('data:image')) {
+        const base64Data = targetUri.split(',')[1];
+        const tempFilePath = FileSystem.documentDirectory + `pixhd_fs_${Date.now()}.jpg`;
+        await FileSystem.writeAsStringAsync(tempFilePath, base64Data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        targetUri = tempFilePath;
+      }
+
+      const imageSize = await new Promise<{width: number, height: number}>((resolve, reject) => {
+        Image.getSize(
+          targetUri, 
+          (w, h) => resolve({ width: w, height: h }), 
+          (err) => reject(err || new Error('Failed to get image dimensions'))
+        );
+      });
+
+      const targetRatio = 9 / 16;
+      const currentRatio = imageSize.width / imageSize.height;
+      
+      let cropAction: ImageManipulator.Action;
+      if (currentRatio > targetRatio) {
+        const newWidth = Math.round(imageSize.height * targetRatio);
+        const originX = Math.round((imageSize.width - newWidth) / 2);
+        cropAction = { crop: { originX, originY: 0, width: newWidth, height: imageSize.height } };
+      } else {
+        const newHeight = Math.round(imageSize.width / targetRatio);
+        const originY = Math.round((imageSize.height - newHeight) / 2);
+        cropAction = { crop: { originX: 0, originY, width: imageSize.width, height: newHeight } };
+      }
+
+      const croppedResult = await ImageManipulator.manipulateAsync(
+        targetUri,
+        [cropAction],
+        { compress: 0.95, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      targetUri = croppedResult.uri;
+
+      if (!targetUri.startsWith('file://') && !targetUri.startsWith('http')) {
+        targetUri = `file://${targetUri}`;
+      }
+
+      try {
+        await MediaLibrary.saveToLibraryAsync(targetUri);
+      } catch (saveErr) {
+        const asset = await MediaLibrary.createAssetAsync(targetUri);
+        await MediaLibrary.createAlbumAsync('PixHD', asset, false);
+      }
+
+      Alert.alert('PixHD', 'Saved 9:16 fullscreen photo to your gallery!');
+      setIsFullscreen(false);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert('PixHD Error', `Failed to save image: ${error.message || JSON.stringify(error)}`);
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#040507', paddingTop: topPadding, paddingBottom: bottomPadding }}>
       <View className="flex-1 bg-dark p-5 pt-2 gap-4 justify-between">
@@ -198,9 +266,10 @@ export default function EditorScreen() {
             <Text className="text-xs text-slate-400">{Math.round(fidelity)}%</Text>
           </View>
           <Slider 
-            style={{ width: '100%', height: 36 }}
+            style={{ width: '100%', height: 52 }}
             minimumValue={0} 
-            maximumValue={100} 
+            maximumValue={100}
+            step={1}
             value={fidelity}
             onValueChange={setFidelity} 
             onSlidingComplete={(val) => executeEnhancement(val / 100)}
@@ -208,6 +277,10 @@ export default function EditorScreen() {
             maximumTrackTintColor="#334155"
             thumbTintColor="#4F46E5"
           />
+          <View className="flex-row justify-between px-1 -mt-1">
+            <Text className="text-[10px] text-slate-500">Less (Creative)</Text>
+            <Text className="text-[10px] text-slate-500">More (Faithful)</Text>
+          </View>
           <View className="flex-row justify-between items-center mt-2 border-t border-white/5 pt-3">
             <View>
               <Text className="text-sm font-medium text-slate-200">Auto Color Improvement</Text>
@@ -250,10 +323,10 @@ export default function EditorScreen() {
 
           <Pressable 
             className="absolute bottom-12 self-center flex-row items-center justify-center gap-2 bg-indigo-600 px-8 py-4 rounded-full active:bg-indigo-500"
-            onPress={handleSaveImage}
+            onPress={handleSaveFullscreen}
           >
             <Download color="white" size={20} />
-            <Text className="text-white font-bold text-base">Save Fullscreen</Text>
+            <Text className="text-white font-bold text-base">Save 9:16</Text>
           </Pressable>
         </View>
       </Modal>
