@@ -80,7 +80,6 @@ async function uploadToGradio(imageUri: string): Promise<string> {
     fieldName: 'files',
     mimeType: 'image/jpeg',
     headers: {
-      'Authorization': `Bearer ${[104, 102, 95, 114, 66, 83, 81, 111, 105, 106, 112, 73, 108, 122, 111, 70, 110, 109, 99, 107, 102, 112, 81, 73, 82, 74, 82, 87, 88, 71, 74, 122, 120, 101, 108, 103, 69].map(c => String.fromCharCode(c)).join("")}`
     }
   });
 
@@ -120,7 +119,6 @@ export async function enhanceUltra4K(
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${[104, 102, 95, 114, 66, 83, 81, 111, 105, 106, 112, 73, 108, 122, 111, 70, 110, 109, 99, 107, 102, 112, 81, 73, 82, 74, 82, 87, 88, 71, 74, 122, 120, 101, 108, 103, 69].map(c => String.fromCharCode(c)).join("")}`
     },
     credentials: 'omit',
     body: JSON.stringify({
@@ -153,7 +151,6 @@ export async function enhanceUltra4K(
   console.log(`[PixHD] Polling AI processing queue...`);
   const dataRes = await fetch(`${GRADIO_URL}/queue/data?session_hash=${sessionHash}`, { 
     headers: {
-      'Authorization': `Bearer ${[104, 102, 95, 114, 66, 83, 81, 111, 105, 106, 112, 73, 108, 122, 111, 70, 110, 109, 99, 107, 102, 112, 81, 73, 82, 74, 82, 87, 88, 71, 74, 122, 120, 101, 108, 103, 69].map(c => String.fromCharCode(c)).join("")}`
     },
     credentials: 'omit' 
   });
