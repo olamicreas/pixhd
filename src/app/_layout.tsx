@@ -14,7 +14,7 @@ export default function Layout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="light" translucent />
+        <StatusBar style="light" />
         <ThemeProvider value={DarkTheme}>
 
           <Stack

@@ -7,7 +7,7 @@ import { X, Download, Maximize } from 'lucide-react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import * as MediaLibrary from 'expo-media-library/legacy';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
 import { enhanceUltra4K } from '../services/ApiService';
 import { AdManager } from '../services/AdManager';

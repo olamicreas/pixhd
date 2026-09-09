@@ -5,13 +5,12 @@ import { AdManager } from '../services/AdManager';
 export default function ExportModal() {
   const router = useRouter();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Show interstitial ad before saving
-    AdManager.showInterstitialAd(() => {
-      // Logic to save image using expo-file-system and expo-media-library
-      alert('Saved to Photos!');
-      router.back();
-    });
+    await AdManager.showAd('SAVE_IMAGE');
+    // Logic to save image using expo-file-system and expo-media-library
+    alert('Saved to Photos!');
+    router.back();
   };
 
   return (
