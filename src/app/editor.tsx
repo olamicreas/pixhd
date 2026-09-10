@@ -71,7 +71,7 @@ export default function EditorScreen() {
       }
     };
     initSettings();
-  }, []);
+  }, [activeImage]);
 
   const executeEnhancement = async (fidelityVal: number, useAutoColor: boolean = autoColor) => {
     if (!activeImage || isProcessing) return;
