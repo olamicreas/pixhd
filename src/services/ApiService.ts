@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
-const SPACE_NAME = "Olamicreas/pixhd-backend";
+const SPACE_NAME = "Olamicreas/pixhd-v2";
 const GRADIO_URL = `https://${SPACE_NAME.replace("/", "-").toLowerCase()}.hf.space`;
 console.log(`[PixHD Network] Connecting to AI Backend at: ${GRADIO_URL}`);
 

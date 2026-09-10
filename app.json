@@ -52,7 +52,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pixhd.photoenhancer",
-      "buildNumber": "129",
+      "buildNumber": "130",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
