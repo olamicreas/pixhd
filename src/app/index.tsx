@@ -4,6 +4,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Upload, ChevronRight, Wand2, Maximize, Sparkles, Palette } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -111,6 +112,12 @@ export default function HomeScreen() {
         </View>
 
       </ScrollView>
+      <View className="items-center justify-center w-full bg-[#040507]">
+        <BannerAd 
+          unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-5169120635628369/6485100953'} 
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
+        />
+      </View>
     </View>
   );
 }

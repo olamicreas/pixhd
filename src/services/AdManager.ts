@@ -1,13 +1,12 @@
-import { InterstitialAd, TestIds, AdEventType } from 'react-native-google-mobile-ads';
+import { RewardedInterstitialAd, TestIds, AdEventType, RewardedAdEventType } from 'react-native-google-mobile-ads';
 import { Platform } from 'react-native';
 
-// Use Test ID for now so it works instantly. Replace with real AdMob ID later!
 const adUnitId = __DEV__ 
-  ? TestIds.INTERSTITIAL 
-  : (Platform.OS === 'ios' ? TestIds.INTERSTITIAL : TestIds.INTERSTITIAL);
+  ? TestIds.REWARDED_INTERSTITIAL 
+  : (Platform.OS === 'ios' ? 'ca-app-pub-5169120635628369/1260694434' : 'ca-app-pub-5169120635628369/1260694434');
 
 class AdService {
-  private interstitial: InterstitialAd | null = null;
+  private interstitial: RewardedInterstitialAd | null = null;
   private loaded = false;
 
   initialize() {
@@ -17,23 +16,23 @@ class AdService {
 
   private loadNewAd() {
     this.loaded = false;
-    this.interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+    this.interstitial = RewardedInterstitialAd.createForAdRequest(adUnitId, {
       requestNonPersonalizedAdsOnly: true,
     });
 
-    this.interstitial.addAdEventListener(AdEventType.LOADED, () => {
-      console.log('[AdManager] Interstitial Ad Loaded');
+    this.interstitial.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      console.log('[AdManager] Rewarded Interstitial Ad Loaded');
       this.loaded = true;
     });
 
     this.interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-      console.log('[AdManager] Interstitial Ad Closed');
+      console.log('[AdManager] Rewarded Interstitial Ad Closed');
       // Preload next ad immediately
       this.loadNewAd();
     });
 
     this.interstitial.addAdEventListener(AdEventType.ERROR, (error) => {
-      console.error('[AdManager] Interstitial Ad Failed:', error);
+      console.error('[AdManager] Rewarded Interstitial Ad Failed:', error);
     });
 
     this.interstitial.load();
@@ -44,17 +43,30 @@ class AdService {
     
     return new Promise((resolve) => {
       if (this.loaded && this.interstitial) {
-        // Resolve immediately when user closes the ad
-        const unsubscribe = this.interstitial.addAdEventListener(AdEventType.CLOSED, () => {
-          unsubscribe();
-          resolve(true);
+        
+        let isResolved = false;
+        const complete = () => {
+            if (!isResolved) {
+                isResolved = true;
+                resolve(true);
+            }
+        };
+
+        // Resolve when user earns reward or closes
+        const unsubEarn = this.interstitial.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+          complete();
+        });
+        const unsubClose = this.interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+          unsubEarn();
+          unsubClose();
+          complete();
         });
         
         try {
           this.interstitial.show();
         } catch (e) {
           console.error('[AdManager] Failed to show ad:', e);
-          resolve(true);
+          complete();
         }
       } else {
         console.log('[AdManager] Ad was not loaded yet. Skipping smoothly.');

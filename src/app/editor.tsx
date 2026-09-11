@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import Slider from '@react-native-community/slider';
 import { enhanceUltra4K } from '../services/ApiService';
 import { AdManager } from '../services/AdManager';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 const { width } = Dimensions.get('window');
@@ -338,6 +339,13 @@ export default function EditorScreen() {
           <Download color="#08090C" size={18} />
           <Text className="font-semibold text-sm text-[#08090C]">Save 4K Image</Text>
         </Pressable>
+      </View>
+
+      <View className="items-center justify-center w-full bg-[#040507]">
+        <BannerAd 
+          unitId={__DEV__ ? TestIds.BANNER : 'ca-app-pub-5169120635628369/6485100953'} 
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER} 
+        />
       </View>
 
       {/* Fullscreen Viewer Modal */}
